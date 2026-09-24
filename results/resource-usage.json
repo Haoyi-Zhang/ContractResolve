@@ -1,0 +1,16 @@
+{
+  "recorded_at_utc": "2026-09-20T16:17:14Z",
+  "command": "python3 reproduce.py --out <fresh-output>",
+  "workers": 4,
+  "individual_experiment_workers": 1,
+  "child_processes": 14,
+  "all_child_exit_codes_zero": true,
+  "unit_tests": 79,
+  "scientific_files_compared": 26,
+  "result_families": 12,
+  "scientific_results_match": true,
+  "runner_wall_seconds": 24.586762550999993,
+  "child_cpu_seconds": 61.43739,
+  "outer_process_peak_rss_kib": 753896,
+  "boundary": "Observed resources are environment-specific reproducibility records, not performance claims or exact-match criteria."
+}
