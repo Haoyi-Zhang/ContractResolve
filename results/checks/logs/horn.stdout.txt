@@ -46,11 +46,11 @@
         "max_recomputed_gates": 165,
         "mean_recomputed_fraction": 0.07332427536231884,
         "p95_recomputed_fraction": 0.4115942028985507,
-        "compile_wall_seconds": 0.0017084730000078707,
-        "update_wall_seconds": 0.058531482999796935,
-        "full_wall_seconds": 0.03588984099883419,
-        "oracle_wall_seconds": 0.016859832000818642,
-        "replay_wall_seconds": 0.002089135999995051
+        "compile_wall_seconds": 0.001643100000137565,
+        "update_wall_seconds": 0.05298015200037298,
+        "full_wall_seconds": 0.03168638500233101,
+        "oracle_wall_seconds": 0.01571550799940269,
+        "replay_wall_seconds": 0.004430503999856228
       },
       {
         "instance": 1,
@@ -76,11 +76,11 @@
         "max_recomputed_gates": 613,
         "mean_recomputed_fraction": 0.07626206472369416,
         "p95_recomputed_fraction": 0.39212717638152916,
-        "compile_wall_seconds": 0.05405332999998791,
-        "update_wall_seconds": 0.22925379400157908,
-        "full_wall_seconds": 0.1362879869984681,
-        "oracle_wall_seconds": 0.07291640200037364,
-        "replay_wall_seconds": 0.013487490999978036
+        "compile_wall_seconds": 0.005978002999881937,
+        "update_wall_seconds": 0.196624504998681,
+        "full_wall_seconds": 0.1196601090018703,
+        "oracle_wall_seconds": 0.06387154100070802,
+        "replay_wall_seconds": 0.010519429999931162
       },
       {
         "instance": 2,
@@ -106,11 +106,11 @@
         "max_recomputed_gates": 1904,
         "mean_recomputed_fraction": 0.09648491379310345,
         "p95_recomputed_fraction": 0.47255172413793106,
-        "compile_wall_seconds": 0.011700170000040089,
-        "update_wall_seconds": 0.7823546349998196,
-        "full_wall_seconds": 0.6206704130006528,
-        "oracle_wall_seconds": 0.2943853609992857,
-        "replay_wall_seconds": 0.051396128000078534
+        "compile_wall_seconds": 0.06652957599999354,
+        "update_wall_seconds": 0.5782205919995249,
+        "full_wall_seconds": 0.3829185809995579,
+        "oracle_wall_seconds": 0.20620985499840572,
+        "replay_wall_seconds": 0.03804378400013775
       },
       {
         "instance": 3,
@@ -136,11 +136,11 @@
         "max_recomputed_gates": 7431,
         "mean_recomputed_fraction": 0.09283694218890971,
         "p95_recomputed_fraction": 0.46241932125754737,
-        "compile_wall_seconds": 0.03990289200010011,
-        "update_wall_seconds": 2.643580728000188,
-        "full_wall_seconds": 1.6760355939984493,
-        "oracle_wall_seconds": 1.1073381520002386,
-        "replay_wall_seconds": 0.4514419149998048
+        "compile_wall_seconds": 0.11393454500012012,
+        "update_wall_seconds": 2.4420173940002314,
+        "full_wall_seconds": 1.5800411259990597,
+        "oracle_wall_seconds": 1.0638796659998206,
+        "replay_wall_seconds": 0.3352524460001405
       },
       {
         "instance": 4,
@@ -166,11 +166,11 @@
         "max_recomputed_gates": 19230,
         "mean_recomputed_fraction": 0.07938911750638475,
         "p95_recomputed_fraction": 0.41990416113923695,
-        "compile_wall_seconds": 0.22472855099999833,
-        "update_wall_seconds": 2.4811786729994765,
-        "full_wall_seconds": 1.628777207999292,
-        "oracle_wall_seconds": 1.1313560099999904,
-        "replay_wall_seconds": 2.22740392899982
+        "compile_wall_seconds": 0.2473543390001396,
+        "update_wall_seconds": 2.4925200160002987,
+        "full_wall_seconds": 1.6373523129991554,
+        "oracle_wall_seconds": 1.2942144399996778,
+        "replay_wall_seconds": 2.3806290509999144
       }
     ],
     "totals": {
@@ -186,9 +186,9 @@
       "witnesses_replayed": 9
     }
   },
-  "cpu_seconds": 22.516728394,
-  "wall_seconds": 22.527565009,
-  "peak_rss_kib": 753896,
+  "cpu_seconds": 20.215199353000003,
+  "wall_seconds": 20.262842528999954,
+  "peak_rss_kib": 751780,
   "workers": 1,
   "randomness": "fixed Python PRNG seeds listed in source; no outcome-dependent selection",
   "maturity": "complete finite validation for the small family plus deterministic generated contract-graph scaling evidence",

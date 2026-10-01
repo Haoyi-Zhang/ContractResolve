@@ -20,27 +20,31 @@ policy if it preserved body equality and proof replay.
 
 ## 2. Generic layered resolution circuit
 
-A checked certificate declares exact source axioms, a finite clause universe,
-exact oriented binary-resolution schemas, a root, and a depth `d`.
+A checked certificate declares an admitted identifier set `Aset` contained in
+`dom(F)`, serialized as exact source pairs `(i,F(i))`, together with a finite
+clause universe, exact oriented binary-resolution schemas, a root, and a depth
+`d`. Trace mode may admit a proper subset, including the empty set. Closed mode
+requires `Aset = dom(F)`.
 
-For clause `C`, let `D_0(C)` be the OR of active exact source leaves with body
-`C`. For `t > 0`,
+For clause `C`, let `D_0(C)` be the OR of active exact leaves whose identifiers
+are in `Aset` and whose body is `C`. Omitted source identifiers do not create
+implicit leaves. For `t > 0`,
 
 ```text
 D_t(C) = D_(t-1)(C)
          OR
-         OR over checked schemas A,B -> C of
-            (D_(t-1)(A) AND D_(t-1)(B)).
+         OR over checked schemas P,Q -> C of
+            (D_(t-1)(P) AND D_(t-1)(Q)).
 ```
 
-**Layer lemma.** `D_t(C)` is true exactly when the active exact source leaves
+**Layer lemma.** `D_t(C)` is true exactly when the active admitted source leaves
 have a derivation of `C` of height at most `t` using the admitted schemas.
 
-*Proof.* Induction on `t`. Layer zero consists exactly of active axioms. At a
-positive layer, persistence preserves shorter derivations and every true schema
-AND combines two derivations from the preceding layer. Conversely, every gate
-used by a true OR branch is either persistence or a checked schema with true
-parents. QED.
+*Proof.* Induction on `t`. Layer zero consists exactly of active admitted
+axioms. At a positive layer, persistence preserves shorter derivations and every
+true schema AND combines two derivations from the preceding layer. Conversely,
+every gate used by a true OR branch is either persistence or a checked schema
+with true parents. QED.
 
 ## 3. Replay soundness
 
@@ -48,20 +52,29 @@ Every source leaf is checked against the source identifier and body. Every
 schema is checked to be the exact non-tautological binary resolvent with the
 stated positive pivot orientation.
 
-**Theorem.** If the root gate is true under target `G`, the implementation can
-select true OR branches recursively, emit exact target axioms and checked
-resolution nodes, and obtain an ordinary proof of the requested root from
-`R_F(G)`. The ordinary checker accepts that proof. Therefore `G` entails the
-root.
+**Theorem.** If the root gate is true under target `G`, the admitted exact
+leaves and checked schemas entail the requested root, hence `G` entails it. The
+implementation selects one true proof sub-DAG with an explicit stack, processes
+selected gates in topological index order, and computes the exact number of
+ordinary axiom and resolution nodes before materialization. If that count is at
+most the admitted replay limit `B`, it emits an ordinary proof and the ordinary
+checker accepts it.
 
-A circuit value alone is never the final positive answer; replay is mandatory.
-A false value only states failure of the admitted old evidence.
+The same `B` is enforced at source admission and every later replay, and it may
+not exceed the ordinary checker's `MAX_NODES`. A source-positive certificate
+whose selected replay exceeds `B` is rejected during admission. A later target
+may keep the circuit logically true while deleting a short path and exposing a
+larger selected witness; exceeding `B` then raises `ReplayBudgetExceeded`. This
+is a resource rejection, not logical false and not proof acceptance. Replay is
+mandatory; increasing the Python recursion limit or bypassing replay is not part
+of the contract.
 
 ## 4. Closed-mode exactness
 
-Closed mode checks that the finite universe contains every source body and the
-root, contains every non-tautological binary resolvent of its members, and lists
-the complete oriented schema relation. The depth is at least the universe size.
+Closed mode first requires `Aset = dom(F)`. It then checks that the finite
+universe contains every source body and the root, contains every
+non-tautological binary resolvent of its members, and lists the complete oriented
+schema relation. The depth is at least the universe size.
 
 **Finite saturation lemma.** A finite non-tautological clause set closed under
 all non-tautological binary resolvents contains the empty clause iff it is
@@ -120,10 +133,15 @@ rounds are needed because every productive round adds an atom. A Horn formula is
 UNSAT exactly when its least forward-chaining model activates a negative
 constraint. Hence the root is true iff `R_F(G)` is UNSAT.
 
-For replay, recursively obtain unit proofs for each antecedent, start from the
-retained Horn rule, and resolve away each negative antecedent. A headed rule
-ends at its positive unit; a negative constraint ends at the empty clause. The
-ordinary checker validates the emitted proof.
+For replay, an explicit stack selects the necessary facts, headed rules, and
+negative constraint. A topological pass shares selected antecedent-unit proofs,
+starts each rule from its retained Horn clause, and resolves away each negative
+antecedent. A headed rule ends at its positive unit; a negative constraint ends
+at the empty clause. Before allocating the packet, the checker counts one node
+per selected leaf plus one resolution node per selected antecedent occurrence
+and applies the same replay budget used by the ordinary checker. Within budget,
+the ordinary checker validates the emitted proof; over budget, the result is an
+explicit resource rejection rather than logical false.
 
 If every headed dependency points forward in a DAG, process atoms in topological
 order. Each rule fires once and every atom OR is constructed once; the result is
@@ -133,7 +151,8 @@ exact without fixed-point unrolling.
 
 ### Generic resolution circuit
 
-With `n` exact axiom leaves, `m` clauses, `s` schemas, and depth `d`:
+With `n = |Aset|` admitted exact axiom leaves, `m` clauses, `s` schemas, and
+depth `d`:
 
 ```text
 N = n + (d + 1)m + ds gates
@@ -142,7 +161,9 @@ E = n + dm + 3ds parent edges.
 
 The terms are respectively leaves, clause OR gates, schema AND gates, leaf-to-
 layer-zero edges, persistence edges, and the two schema inputs plus schema-to-
-clause edge. The implementation checks `N` before allocation.
+clause edge. The implementation checks `N` before allocation. Gate bounds and replay-node
+bounds are distinct: a small circuit can select an ordinary proof larger than
+the checker's node limit.
 
 ### Horn circuit
 
@@ -168,9 +189,9 @@ Tests and the row-level auditor independently rederive these formulas.
 
 ## 7. Edit-local reevaluation
 
-The compiled graph is acyclic and every leaf stores its outgoing fanout. On an
-edit, update the leaves whose exact-retention truth value changed, mark their
-transitive fanout, and recompute marked internal gates in topological index
+The compiled graph is acyclic and every leaf stores its outgoing fanout. The
+semantic update operation changes exact-retention leaf values, marks their
+transitive fanout, and recomputes marked internal gates in topological index
 order.
 
 **Theorem.** Given a correct prior evaluation of the same circuit, edit-local
@@ -180,14 +201,30 @@ update equals a full evaluation at every gate.
 leaves receive their new values. Every affected internal gate is recomputed only
 after its parents. Induction over topological order proves equality. QED.
 
-The implementation marks the full structural fanout even when an intermediate
-value does not change, so the reported cone is conservative rather than minimal.
+The immutable reference implementation is not asymptotically edit-only. It
+validates and sorts the complete prior target snapshot, parses and sorts the
+complete current target, copies and rematerializes all `N` gate values, scans all
+`n` admitted leaves, traverses `E_delta`, sorts `k` affected gate indices, and
+re-evaluates their Boolean logic. Ignoring literal canonicalization, this is
+
+```text
+O(N + g_prev log g_prev + g_next log g_next
+    + n + E_delta + k log k).
+```
+
+A mutable delta API supplied with canonical changed identifiers could approach
+`O(|Delta_A| + E_delta)`, but it is not implemented. The stored fanout fraction
+counts only Boolean gates re-evaluated in the marked cone; it is not total work,
+elapsed-time speedup, or evidence that the reference path avoids full scanning
+and copying. The cone itself is conservative because it remains fully marked
+even when an intermediate value does not change.
 
 ## 8. Sufficient blocking cuts
 
-For a false gate: a leaf contributes its identifier; a false OR contributes the
-union of cuts for all parents; a false AND contributes one deterministic false-
-parent cut.
+For a false gate, an explicit stack first marks the relevant false sub-DAG and
+a topological pass computes the cut: a leaf contributes its identifier; a false
+OR contributes the union of cuts for all parents; a false AND contributes one
+deterministic false-parent cut.
 
 **Theorem.** If every named leaf remains false, the selected gate remains false
 regardless of other leaves. The result is sufficient, not minimum, necessary,

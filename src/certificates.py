@@ -19,6 +19,10 @@ class Rejected(ValueError):
     """Malformed certificate or invalid inference."""
 
 
+class ReplayBudgetExceeded(Rejected):
+    """A logically positive result cannot be replayed within its admitted budget."""
+
+
 def _keys(d: Any, required: set[str]) -> None:
     if not isinstance(d, dict) or set(d) != required:
         raise Rejected(f"expected exactly keys {sorted(required)}")

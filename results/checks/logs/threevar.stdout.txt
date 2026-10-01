@@ -109,9 +109,10 @@
         {
           "id": "n0",
           "kind": "axiom",
-          "source": "a21",
+          "source": "a01",
           "clause": [
-            1
+            -2,
+            -1
           ]
         },
         {
@@ -126,17 +127,16 @@
         {
           "id": "n2",
           "kind": "axiom",
-          "source": "a01",
+          "source": "a21",
           "clause": [
-            -2,
-            -1
+            1
           ]
         },
         {
           "id": "n3",
           "kind": "resolve",
           "left": "n1",
-          "right": "n2",
+          "right": "n0",
           "pivot": 2,
           "clause": [
             -1
@@ -145,7 +145,7 @@
         {
           "id": "n4",
           "kind": "resolve",
-          "left": "n0",
+          "left": "n2",
           "right": "n3",
           "pivot": 1,
           "clause": []
@@ -154,9 +154,9 @@
       "root": "n4"
     }
   },
-  "cpu_seconds": 5.602618147,
-  "wall_seconds": 5.613703294000061,
-  "peak_rss_kib": 95532,
+  "cpu_seconds": 5.007703332,
+  "wall_seconds": 5.012939369999913,
+  "peak_rss_kib": 94760,
   "workers": 1,
   "randomness": "none",
   "maturity": "complete finite enumeration for the stated bounded family"

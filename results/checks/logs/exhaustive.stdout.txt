@@ -59,9 +59,9 @@
     "source_mask": 5,
     "target_mask": 6
   },
-  "cpu_seconds": 0.5990366550000001,
-  "wall_seconds": 0.6007934889998978,
-  "peak_rss_kib": 93480,
+  "cpu_seconds": 0.556459968,
+  "wall_seconds": 0.5579394100000172,
+  "peak_rss_kib": 93232,
   "workers": 1,
   "randomness": "none; exhaustive ordered enumeration",
   "maturity": "finite-check, not a machine-checked general proof"

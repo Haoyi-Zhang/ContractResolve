@@ -33,9 +33,12 @@
       ],
       "trace_stats": {
         "mode": "trace",
+        "source_clauses": 3,
+        "admitted_axioms": 3,
         "clauses": 5,
         "schemas": 2,
         "max_depth": 5,
+        "replay_node_limit": 100000,
         "gates": 43,
         "edges": 58,
         "leaf_gates": 3,
@@ -45,9 +48,12 @@
       },
       "closed_stats": {
         "mode": "closed",
+        "source_clauses": 3,
+        "admitted_axioms": 3,
         "clauses": 6,
         "schemas": 4,
         "max_depth": 6,
+        "replay_node_limit": 100000,
         "gates": 69,
         "edges": 111,
         "leaf_gates": 3,
@@ -97,9 +103,12 @@
       ],
       "trace_stats": {
         "mode": "trace",
+        "source_clauses": 3,
+        "admitted_axioms": 3,
         "clauses": 5,
         "schemas": 2,
         "max_depth": 5,
+        "replay_node_limit": 100000,
         "gates": 43,
         "edges": 58,
         "leaf_gates": 3,
@@ -109,9 +118,12 @@
       },
       "closed_stats": {
         "mode": "closed",
+        "source_clauses": 3,
+        "admitted_axioms": 3,
         "clauses": 6,
         "schemas": 4,
         "max_depth": 6,
+        "replay_node_limit": 100000,
         "gates": 69,
         "edges": 111,
         "leaf_gates": 3,
@@ -124,13 +136,21 @@
           {
             "id": "n0",
             "kind": "axiom",
+            "source": "bad",
+            "clause": [
+              -2
+            ]
+          },
+          {
+            "id": "n1",
+            "kind": "axiom",
             "source": "request",
             "clause": [
               1
             ]
           },
           {
-            "id": "n1",
+            "id": "n2",
             "kind": "axiom",
             "source": "rule",
             "clause": [
@@ -139,18 +159,10 @@
             ]
           },
           {
-            "id": "n2",
-            "kind": "axiom",
-            "source": "bad",
-            "clause": [
-              -2
-            ]
-          },
-          {
             "id": "n3",
             "kind": "resolve",
-            "left": "n1",
-            "right": "n2",
+            "left": "n2",
+            "right": "n0",
             "pivot": 2,
             "clause": [
               -1
@@ -159,7 +171,7 @@
           {
             "id": "n4",
             "kind": "resolve",
-            "left": "n0",
+            "left": "n1",
             "right": "n3",
             "pivot": 1,
             "clause": []
@@ -172,13 +184,21 @@
           {
             "id": "n0",
             "kind": "axiom",
+            "source": "bad",
+            "clause": [
+              -2
+            ]
+          },
+          {
+            "id": "n1",
+            "kind": "axiom",
             "source": "request",
             "clause": [
               1
             ]
           },
           {
-            "id": "n1",
+            "id": "n2",
             "kind": "axiom",
             "source": "rule",
             "clause": [
@@ -187,18 +207,10 @@
             ]
           },
           {
-            "id": "n2",
-            "kind": "axiom",
-            "source": "bad",
-            "clause": [
-              -2
-            ]
-          },
-          {
             "id": "n3",
             "kind": "resolve",
-            "left": "n1",
-            "right": "n2",
+            "left": "n2",
+            "right": "n0",
             "pivot": 2,
             "clause": [
               -1
@@ -207,7 +219,7 @@
           {
             "id": "n4",
             "kind": "resolve",
-            "left": "n0",
+            "left": "n1",
             "right": "n3",
             "pivot": 1,
             "clause": []
@@ -251,9 +263,12 @@
       ],
       "trace_stats": {
         "mode": "trace",
+        "source_clauses": 3,
+        "admitted_axioms": 3,
         "clauses": 5,
         "schemas": 2,
         "max_depth": 5,
+        "replay_node_limit": 100000,
         "gates": 43,
         "edges": 58,
         "leaf_gates": 3,
@@ -263,9 +278,12 @@
       },
       "closed_stats": {
         "mode": "closed",
+        "source_clauses": 3,
+        "admitted_axioms": 3,
         "clauses": 6,
         "schemas": 4,
         "max_depth": 6,
+        "replay_node_limit": 100000,
         "gates": 69,
         "edges": 111,
         "leaf_gates": 3,
@@ -315,9 +333,12 @@
       ],
       "trace_stats": {
         "mode": "trace",
+        "source_clauses": 4,
+        "admitted_axioms": 4,
         "clauses": 5,
         "schemas": 2,
         "max_depth": 5,
+        "replay_node_limit": 100000,
         "gates": 44,
         "edges": 59,
         "leaf_gates": 4,
@@ -327,9 +348,12 @@
       },
       "closed_stats": {
         "mode": "closed",
+        "source_clauses": 4,
+        "admitted_axioms": 4,
         "clauses": 6,
         "schemas": 4,
         "max_depth": 6,
+        "replay_node_limit": 100000,
         "gates": 70,
         "edges": 112,
         "leaf_gates": 4,
@@ -342,13 +366,21 @@
           {
             "id": "n0",
             "kind": "axiom",
+            "source": "bad",
+            "clause": [
+              -2
+            ]
+          },
+          {
+            "id": "n1",
+            "kind": "axiom",
             "source": "request",
             "clause": [
               1
             ]
           },
           {
-            "id": "n1",
+            "id": "n2",
             "kind": "axiom",
             "source": "rule_b",
             "clause": [
@@ -357,18 +389,10 @@
             ]
           },
           {
-            "id": "n2",
-            "kind": "axiom",
-            "source": "bad",
-            "clause": [
-              -2
-            ]
-          },
-          {
             "id": "n3",
             "kind": "resolve",
-            "left": "n1",
-            "right": "n2",
+            "left": "n2",
+            "right": "n0",
             "pivot": 2,
             "clause": [
               -1
@@ -377,7 +401,7 @@
           {
             "id": "n4",
             "kind": "resolve",
-            "left": "n0",
+            "left": "n1",
             "right": "n3",
             "pivot": 1,
             "clause": []
@@ -390,13 +414,21 @@
           {
             "id": "n0",
             "kind": "axiom",
+            "source": "bad",
+            "clause": [
+              -2
+            ]
+          },
+          {
+            "id": "n1",
+            "kind": "axiom",
             "source": "request",
             "clause": [
               1
             ]
           },
           {
-            "id": "n1",
+            "id": "n2",
             "kind": "axiom",
             "source": "rule_b",
             "clause": [
@@ -405,18 +437,10 @@
             ]
           },
           {
-            "id": "n2",
-            "kind": "axiom",
-            "source": "bad",
-            "clause": [
-              -2
-            ]
-          },
-          {
             "id": "n3",
             "kind": "resolve",
-            "left": "n1",
-            "right": "n2",
+            "left": "n2",
+            "right": "n0",
             "pivot": 2,
             "clause": [
               -1
@@ -425,7 +449,7 @@
           {
             "id": "n4",
             "kind": "resolve",
-            "left": "n0",
+            "left": "n1",
             "right": "n3",
             "pivot": 1,
             "clause": []
@@ -469,9 +493,12 @@
       ],
       "trace_stats": {
         "mode": "trace",
+        "source_clauses": 5,
+        "admitted_axioms": 5,
         "clauses": 7,
         "schemas": 3,
         "max_depth": 7,
+        "replay_node_limit": 100000,
         "gates": 82,
         "edges": 117,
         "leaf_gates": 5,
@@ -481,9 +508,12 @@
       },
       "closed_stats": {
         "mode": "closed",
+        "source_clauses": 5,
+        "admitted_axioms": 5,
         "clauses": 9,
         "schemas": 7,
         "max_depth": 9,
+        "replay_node_limit": 100000,
         "gates": 158,
         "edges": 275,
         "leaf_gates": 5,
@@ -496,9 +526,9 @@
           {
             "id": "n0",
             "kind": "axiom",
-            "source": "request",
+            "source": "bad_b",
             "clause": [
-              1
+              -3
             ]
           },
           {
@@ -513,16 +543,16 @@
           {
             "id": "n2",
             "kind": "axiom",
-            "source": "bad_b",
+            "source": "request",
             "clause": [
-              -3
+              1
             ]
           },
           {
             "id": "n3",
             "kind": "resolve",
             "left": "n1",
-            "right": "n2",
+            "right": "n0",
             "pivot": 3,
             "clause": [
               -1
@@ -531,7 +561,7 @@
           {
             "id": "n4",
             "kind": "resolve",
-            "left": "n0",
+            "left": "n2",
             "right": "n3",
             "pivot": 1,
             "clause": []
@@ -544,9 +574,9 @@
           {
             "id": "n0",
             "kind": "axiom",
-            "source": "request",
+            "source": "bad_b",
             "clause": [
-              1
+              -3
             ]
           },
           {
@@ -561,16 +591,16 @@
           {
             "id": "n2",
             "kind": "axiom",
-            "source": "bad_b",
+            "source": "request",
             "clause": [
-              -3
+              1
             ]
           },
           {
             "id": "n3",
             "kind": "resolve",
             "left": "n1",
-            "right": "n2",
+            "right": "n0",
             "pivot": 3,
             "clause": [
               -1
@@ -579,7 +609,7 @@
           {
             "id": "n4",
             "kind": "resolve",
-            "left": "n0",
+            "left": "n2",
             "right": "n3",
             "pivot": 1,
             "clause": []
@@ -616,9 +646,12 @@
       ],
       "trace_stats": {
         "mode": "trace",
+        "source_clauses": 2,
+        "admitted_axioms": 2,
         "clauses": 3,
         "schemas": 1,
         "max_depth": 3,
+        "replay_node_limit": 100000,
         "gates": 17,
         "edges": 20,
         "leaf_gates": 2,
@@ -628,9 +661,12 @@
       },
       "closed_stats": {
         "mode": "closed",
+        "source_clauses": 2,
+        "admitted_axioms": 2,
         "clauses": 3,
         "schemas": 1,
         "max_depth": 3,
+        "replay_node_limit": 100000,
         "gates": 17,
         "edges": 20,
         "leaf_gates": 2,
@@ -687,9 +723,12 @@
       ],
       "trace_stats": {
         "mode": "trace",
+        "source_clauses": 5,
+        "admitted_axioms": 5,
         "clauses": 7,
         "schemas": 3,
         "max_depth": 7,
+        "replay_node_limit": 100000,
         "gates": 82,
         "edges": 117,
         "leaf_gates": 5,
@@ -699,9 +738,12 @@
       },
       "closed_stats": {
         "mode": "closed",
+        "source_clauses": 5,
+        "admitted_axioms": 5,
         "clauses": 10,
         "schemas": 10,
         "max_depth": 10,
+        "replay_node_limit": 100000,
         "gates": 215,
         "edges": 405,
         "leaf_gates": 5,
@@ -714,9 +756,9 @@
           {
             "id": "n0",
             "kind": "axiom",
-            "source": "start",
+            "source": "bad",
             "clause": [
-              1
+              -3
             ]
           },
           {
@@ -740,16 +782,16 @@
           {
             "id": "n3",
             "kind": "axiom",
-            "source": "bad",
+            "source": "start",
             "clause": [
-              -3
+              1
             ]
           },
           {
             "id": "n4",
             "kind": "resolve",
             "left": "n2",
-            "right": "n3",
+            "right": "n0",
             "pivot": 3,
             "clause": [
               -2
@@ -768,7 +810,7 @@
           {
             "id": "n6",
             "kind": "resolve",
-            "left": "n0",
+            "left": "n3",
             "right": "n5",
             "pivot": 1,
             "clause": []
@@ -781,9 +823,9 @@
           {
             "id": "n0",
             "kind": "axiom",
-            "source": "start",
+            "source": "bad",
             "clause": [
-              1
+              -3
             ]
           },
           {
@@ -797,16 +839,6 @@
           },
           {
             "id": "n2",
-            "kind": "resolve",
-            "left": "n0",
-            "right": "n1",
-            "pivot": 1,
-            "clause": [
-              2
-            ]
-          },
-          {
-            "id": "n3",
             "kind": "axiom",
             "source": "second",
             "clause": [
@@ -815,28 +847,38 @@
             ]
           },
           {
-            "id": "n4",
+            "id": "n3",
             "kind": "axiom",
-            "source": "bad",
+            "source": "start",
             "clause": [
-              -3
+              1
             ]
           },
           {
-            "id": "n5",
+            "id": "n4",
             "kind": "resolve",
-            "left": "n3",
-            "right": "n4",
+            "left": "n2",
+            "right": "n0",
             "pivot": 3,
             "clause": [
               -2
             ]
           },
           {
+            "id": "n5",
+            "kind": "resolve",
+            "left": "n3",
+            "right": "n1",
+            "pivot": 1,
+            "clause": [
+              2
+            ]
+          },
+          {
             "id": "n6",
             "kind": "resolve",
-            "left": "n2",
-            "right": "n5",
+            "left": "n5",
+            "right": "n4",
             "pivot": 2,
             "clause": []
           }
@@ -879,9 +921,12 @@
       ],
       "trace_stats": {
         "mode": "trace",
+        "source_clauses": 5,
+        "admitted_axioms": 5,
         "clauses": 5,
         "schemas": 2,
         "max_depth": 5,
+        "replay_node_limit": 100000,
         "gates": 45,
         "edges": 60,
         "leaf_gates": 5,
@@ -891,9 +936,12 @@
       },
       "closed_stats": {
         "mode": "closed",
+        "source_clauses": 5,
+        "admitted_axioms": 5,
         "clauses": 6,
         "schemas": 4,
         "max_depth": 6,
+        "replay_node_limit": 100000,
         "gates": 71,
         "edges": 113,
         "leaf_gates": 5,
@@ -906,9 +954,9 @@
           {
             "id": "n0",
             "kind": "axiom",
-            "source": "start_b",
+            "source": "bad_b",
             "clause": [
-              1
+              -2
             ]
           },
           {
@@ -923,16 +971,16 @@
           {
             "id": "n2",
             "kind": "axiom",
-            "source": "bad_b",
+            "source": "start_b",
             "clause": [
-              -2
+              1
             ]
           },
           {
             "id": "n3",
             "kind": "resolve",
             "left": "n1",
-            "right": "n2",
+            "right": "n0",
             "pivot": 2,
             "clause": [
               -1
@@ -941,7 +989,7 @@
           {
             "id": "n4",
             "kind": "resolve",
-            "left": "n0",
+            "left": "n2",
             "right": "n3",
             "pivot": 1,
             "clause": []
@@ -954,9 +1002,9 @@
           {
             "id": "n0",
             "kind": "axiom",
-            "source": "start_b",
+            "source": "bad_b",
             "clause": [
-              1
+              -2
             ]
           },
           {
@@ -971,16 +1019,16 @@
           {
             "id": "n2",
             "kind": "axiom",
-            "source": "bad_b",
+            "source": "start_b",
             "clause": [
-              -2
+              1
             ]
           },
           {
             "id": "n3",
             "kind": "resolve",
             "left": "n1",
-            "right": "n2",
+            "right": "n0",
             "pivot": 2,
             "clause": [
               -1
@@ -989,7 +1037,7 @@
           {
             "id": "n4",
             "kind": "resolve",
-            "left": "n0",
+            "left": "n2",
             "right": "n3",
             "pivot": 1,
             "clause": []
@@ -1010,9 +1058,9 @@
     "trace_repairs_over_single": 4,
     "closed_repairs_over_trace": 0
   },
-  "cpu_seconds": 0.005002480000000031,
-  "wall_seconds": 0.00500295200004075,
-  "peak_rss_kib": 94256,
+  "cpu_seconds": 0.006057116000000029,
+  "wall_seconds": 0.006057141000155752,
+  "peak_rss_kib": 93236,
   "workers": 1,
   "maturity": "hand-written Boolean contract cases; not RTL or device validation"
 }

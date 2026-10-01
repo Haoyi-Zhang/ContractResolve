@@ -20,6 +20,7 @@ from certificates import (
     MAX_NODES,
     MAX_VARIABLE,
     Rejected,
+    ReplayBudgetExceeded,
     _clause,
     _keys,
     _name,
@@ -70,10 +71,12 @@ class Evaluation:
 @dataclass(frozen=True)
 class VerifiedSurvival:
     source: tuple[tuple[str, Clause], ...]
+    axioms: tuple[tuple[str, Clause], ...]
     mode: str
     clauses: tuple[Clause, ...]
     schemas: tuple[Schema, ...]
     max_depth: int
+    replay_node_limit: int
     root_clause: Clause
     gates: tuple[Gate, ...]
     root_gate: int
@@ -122,7 +125,15 @@ class VerifiedSurvival:
         return Evaluation(tuple(values), tuple(sorted(current.items())), self.owner_token)
 
     def update(self, previous: Evaluation, target: Mapping[str, Any]) -> Evaluation:
-        """Re-evaluate exactly the transitive fanout of changed source leaves."""
+        """Recompute gate logic in the conservative fanout of changed leaves.
+
+        This immutable reference path is intentionally not an asymptotically
+        edit-only implementation: it validates the entire prior snapshot,
+        canonicalizes the entire new target, copies all ``N`` gate values, scans
+        all admitted leaves, and sorts the marked internal-gate indices before
+        recomputation. ``recomputed_gates`` counts only Boolean gate evaluations
+        in the marked fanout; it is not total update work or elapsed-time speedup.
+        """
         self._validate_evaluation(previous)
         current = self._target_map(target)
         values = list(previous.values)
@@ -164,50 +175,89 @@ class VerifiedSurvival:
         self._validate_evaluation(evaluation)
         return evaluation.values[self.root_gate]
 
-    def reconstruct(self, evaluation: Evaluation) -> dict[str, Any]:
-        """Return one surviving ordinary resolution proof and check it again."""
+    def _replay_plan(
+        self, evaluation: Evaluation
+    ) -> tuple[tuple[int, ...], dict[int, int], int]:
+        """Select one true proof sub-DAG iteratively and enforce the replay budget."""
         if not self.survives(evaluation):
             raise Rejected("survival root is false")
-        current = dict(evaluation.target)
-        nodes: list[dict[str, Any]] = []
-        memo: dict[int, str] = {}
-
-        def build(gate_index: int) -> str:
-            if gate_index in memo:
-                return memo[gate_index]
-            gate = self.gates[gate_index]
+        required: set[int] = set()
+        chosen_parent: dict[int, int] = {}
+        stack = [self.root_gate]
+        while stack:
+            gate_index = stack.pop()
+            if gate_index in required:
+                continue
             if not evaluation.values[gate_index]:
                 raise AssertionError("false gate selected for witness")
+            required.add(gate_index)
+            gate = self.gates[gate_index]
             if gate.kind == "or":
-                chosen = next(p for p in gate.parents if evaluation.values[p])
-                ident = build(chosen)
-                memo[gate_index] = ident
-                return ident
-            if gate.kind == "leaf":
+                try:
+                    chosen = next(parent for parent in gate.parents
+                                  if evaluation.values[parent])
+                except StopIteration as exc:  # pragma: no cover - evaluator invariant
+                    raise AssertionError("true OR has no true parent") from exc
+                chosen_parent[gate_index] = chosen
+                stack.append(chosen)
+            elif gate.kind == "and":
+                stack.extend(gate.parents)
+            elif gate.kind != "leaf":  # pragma: no cover - construction invariant
+                raise AssertionError("unknown gate kind")
+
+        ordered = tuple(sorted(required))
+        node_count = sum(self.gates[index].kind in {"leaf", "and"}
+                         for index in ordered)
+        if node_count > self.replay_node_limit:
+            raise ReplayBudgetExceeded(
+                f"replay requires {node_count} ordinary proof nodes; "
+                f"admitted limit is {self.replay_node_limit}"
+            )
+        return ordered, chosen_parent, node_count
+
+    def replay_node_count(self, evaluation: Evaluation) -> int:
+        """Return the exact selected ordinary-proof size or reject on budget."""
+        return self._replay_plan(evaluation)[2]
+
+    def _reconstruct_packet(self, evaluation: Evaluation, *, recheck: bool) -> dict[str, Any]:
+        ordered, chosen_parent, node_count = self._replay_plan(evaluation)
+        current = dict(evaluation.target)
+        nodes: list[dict[str, Any]] = []
+        proof_id: dict[int, str] = {}
+        for gate_index in ordered:
+            gate = self.gates[gate_index]
+            if gate.kind == "or":
+                proof_id[gate_index] = proof_id[chosen_parent[gate_index]]
+            elif gate.kind == "leaf":
                 sid, body = gate.payload
                 ident = f"n{len(nodes)}"
                 nodes.append({"id": ident, "kind": "axiom", "source": sid,
                               "clause": list(body)})
-                memo[gate_index] = ident
-                return ident
-            if gate.kind == "and":
+                proof_id[gate_index] = ident
+            elif gate.kind == "and":
                 left_gate, right_gate = gate.parents
-                left_id, right_id = build(left_gate), build(right_gate)
-                left, right, pivot, out = gate.payload
+                _, _, pivot, out = gate.payload
                 ident = f"n{len(nodes)}"
-                nodes.append({"id": ident, "kind": "resolve", "left": left_id,
-                              "right": right_id, "pivot": pivot,
+                nodes.append({"id": ident, "kind": "resolve",
+                              "left": proof_id[left_gate],
+                              "right": proof_id[right_gate], "pivot": pivot,
                               "clause": list(out)})
-                memo[gate_index] = ident
-                return ident
-            raise AssertionError("unknown gate kind")
-
-        root = build(self.root_gate)
+                proof_id[gate_index] = ident
+            else:  # pragma: no cover - construction invariant
+                raise AssertionError("unknown gate kind")
+        if len(nodes) != node_count:  # pragma: no cover - internal accounting
+            raise AssertionError("replay node accounting mismatch")
+        root = proof_id[self.root_gate]
         packet = {"nodes": nodes, "root": root}
-        checked = verify(current, packet)
-        if checked.conclusion != self.root_clause:
-            raise AssertionError("reconstructed conclusion mismatch")
+        if recheck:
+            checked = verify(current, packet)
+            if checked.conclusion != self.root_clause:
+                raise AssertionError("reconstructed conclusion mismatch")
         return packet
+
+    def reconstruct(self, evaluation: Evaluation) -> dict[str, Any]:
+        """Return one surviving ordinary proof and check it again."""
+        return self._reconstruct_packet(evaluation, recheck=True)
 
     def blocking_cut(self, evaluation: Evaluation) -> tuple[str, ...]:
         """Return a deterministic sufficient leaf cut when the root is false.
@@ -217,27 +267,39 @@ class VerifiedSurvival:
         """
         if self.survives(evaluation):
             raise Rejected("survival root is true")
-        memo: dict[int, frozenset[str]] = {}
-
-        def cut(gate_index: int) -> frozenset[str]:
-            if gate_index in memo:
-                return memo[gate_index]
-            gate = self.gates[gate_index]
+        required: set[int] = set()
+        stack = [self.root_gate]
+        while stack:
+            gate_index = stack.pop()
+            if gate_index in required:
+                continue
             if evaluation.values[gate_index]:
                 raise AssertionError("blocking cut requested for true gate")
+            required.add(gate_index)
+            gate = self.gates[gate_index]
+            if gate.kind == "or":
+                stack.extend(gate.parents)
+            elif gate.kind == "and":
+                stack.extend(parent for parent in gate.parents
+                             if not evaluation.values[parent])
+            elif gate.kind != "leaf":  # pragma: no cover
+                raise AssertionError("unknown gate kind")
+
+        memo: dict[int, frozenset[str]] = {}
+        for gate_index in sorted(required):
+            gate = self.gates[gate_index]
             if gate.kind == "leaf":
                 result = frozenset([gate.payload[0]])
             elif gate.kind == "or":
-                result = frozenset().union(*(cut(p) for p in gate.parents))
+                result = frozenset().union(*(memo[parent] for parent in gate.parents))
             elif gate.kind == "and":
-                choices = [cut(p) for p in gate.parents if not evaluation.values[p]]
-                result = min(choices, key=lambda s: (len(s), tuple(sorted(s))))
+                choices = [memo[parent] for parent in gate.parents
+                           if not evaluation.values[parent]]
+                result = min(choices, key=lambda item: (len(item), tuple(sorted(item))))
             else:  # pragma: no cover
                 raise AssertionError("unknown gate kind")
             memo[gate_index] = result
-            return result
-
-        return tuple(sorted(cut(self.root_gate)))
+        return tuple(sorted(memo[self.root_gate]))
 
     def stats(self) -> dict[str, int | str | bool]:
         leaves = sum(g.kind == "leaf" for g in self.gates)
@@ -246,9 +308,12 @@ class VerifiedSurvival:
         edges = sum(len(g.parents) for g in self.gates)
         return {
             "mode": self.mode,
+            "source_clauses": len(self.source),
+            "admitted_axioms": len(self.axioms),
             "clauses": len(self.clauses),
             "schemas": len(self.schemas),
             "max_depth": self.max_depth,
+            "replay_node_limit": self.replay_node_limit,
             "gates": len(self.gates),
             "edges": edges,
             "leaf_gates": leaves,
@@ -258,9 +323,22 @@ class VerifiedSurvival:
         }
 
 
-def compile_survival(source: Mapping[str, Any], certificate: Any) -> VerifiedSurvival:
-    """Validate a survival certificate and compile its layered monotone circuit."""
+def compile_survival(
+    source: Mapping[str, Any],
+    certificate: Any,
+    *,
+    replay_node_limit: int = MAX_NODES,
+) -> VerifiedSurvival:
+    """Validate a certificate, compile it, and admit the source replay budget.
+
+    The replay limit is shared with ordinary proof checking.  Admission plans a
+    source replay whenever the admitted root is true on the full source; later
+    target evaluations are planned again because deleting a short branch can
+    expose a larger surviving witness.
+    """
     base = formula(source)
+    if type(replay_node_limit) is not int or not 1 <= replay_node_limit <= MAX_NODES:
+        raise Rejected(f"replay_node_limit must be in 1..{MAX_NODES}")
     _keys(certificate, {"mode", "axioms", "clauses", "schemas", "root", "max_depth"})
     mode = certificate["mode"]
     if mode not in {"trace", "closed"}:
@@ -380,12 +458,14 @@ def compile_survival(source: Mapping[str, Any], certificate: Any) -> VerifiedSur
             current.append(add("or", tuple(parents), (c, layer)))
         clause_gate[layer] = current
 
-    return VerifiedSurvival(
+    compiled = VerifiedSurvival(
         source=tuple(sorted(base.items())),
+        axioms=tuple(sorted(axioms)),
         mode=mode,
         clauses=clauses,
         schemas=schemas,
         max_depth=depth,
+        replay_node_limit=replay_node_limit,
         root_clause=root,
         gates=tuple(gates),
         root_gate=clause_gate[depth][clause_index[root]],
@@ -395,3 +475,7 @@ def compile_survival(source: Mapping[str, Any], certificate: Any) -> VerifiedSur
         schema_gates_by_layer=tuple(schema_gates_by_layer),
         owner_token=object(),
     )
+    source_evaluation = compiled.evaluate(base)
+    if compiled.survives(source_evaluation):
+        compiled.replay_node_count(source_evaluation)
+    return compiled

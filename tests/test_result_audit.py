@@ -1,6 +1,7 @@
 """Regression tests for the independent row-level result audit."""
 from __future__ import annotations
 
+import csv
 import json
 import shutil
 import sys
@@ -70,6 +71,59 @@ class ResultAuditTests(unittest.TestCase):
             path = copied / "horn" / "horn-summary.json"
             summary = json.loads(path.read_text(encoding="utf-8"))
             summary["scalable_contract_graphs"]["instances"][0]["gates"] += 1
+            path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+            with self.assertRaises(AuditError):
+                audit(copied)
+
+    def test_audit_rejects_uniformly_left_shifted_horn_masks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            copied = Path(directory) / "results"
+            shutil.copytree(self.result_root, copied)
+            path = copied / "horn" / "horn-exhaustive.csv"
+            with path.open(newline="", encoding="utf-8") as handle:
+                reader = csv.DictReader(handle)
+                fieldnames = reader.fieldnames
+                rows = list(reader)
+            assert fieldnames is not None
+            for row in rows:
+                row["source_mask"] = str(int(row["source_mask"]) << 1)
+                row["target_mask"] = str(int(row["target_mask"]) << 1)
+            with path.open("w", newline="", encoding="utf-8") as handle:
+                writer = csv.DictWriter(handle, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(rows)
+            with self.assertRaises(AuditError):
+                audit(copied)
+
+    def test_audit_rejects_equal_row_count_query_identifier_substitution(self):
+        with tempfile.TemporaryDirectory() as directory:
+            copied = Path(directory) / "results"
+            shutil.copytree(self.result_root, copied)
+            path = copied / "horn" / "horn-scale-queries.csv"
+            with path.open(newline="", encoding="utf-8") as handle:
+                reader = csv.DictReader(handle)
+                fieldnames = reader.fieldnames
+                rows = list(reader)
+            assert fieldnames is not None
+            victim = next(row for row in rows
+                          if row["instance"] == "4" and row["query"] == "47")
+            victim["query"] = "48"
+            with path.open("w", newline="", encoding="utf-8") as handle:
+                writer = csv.DictWriter(handle, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(rows)
+            with self.assertRaises(AuditError):
+                audit(copied)
+
+    def test_audit_rejects_fanout_summary_only_tampering(self):
+        with tempfile.TemporaryDirectory() as directory:
+            copied = Path(directory) / "results"
+            shutil.copytree(self.result_root, copied)
+            path = copied / "horn" / "horn-summary.json"
+            summary = json.loads(path.read_text(encoding="utf-8"))
+            summary["scalable_contract_graphs"]["instances"][4][
+                "p95_recomputed_fraction"
+            ] += 0.01
             path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
             with self.assertRaises(AuditError):
                 audit(copied)

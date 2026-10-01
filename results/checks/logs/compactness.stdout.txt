@@ -114,9 +114,9 @@
   ],
   "witnesses_rechecked": 4532,
   "negative_checks": 171,
-  "cpu_seconds": 5.181559621,
-  "wall_seconds": 5.18823215999987,
-  "peak_rss_kib": 130860,
+  "cpu_seconds": 4.323259785,
+  "wall_seconds": 4.336608919000128,
+  "peak_rss_kib": 112700,
   "workers": 1,
   "randomness": "none",
   "maturity": "general counting argument plus bounded implementation checks"

@@ -57,6 +57,16 @@ def _summary(values: Iterable[int]) -> dict[str, float | int]:
     return {"min": min(data), "mean": sum(data) / len(data), "max": max(data)}
 
 
+def _percentile(values: Iterable[int], q: float) -> float:
+    data = sorted(values)
+    _assert(bool(data), "cannot take a percentile of an empty sequence")
+    position = (len(data) - 1) * q
+    low = int(position)
+    high = min(low + 1, len(data) - 1)
+    fraction = position - low
+    return data[low] * (1.0 - fraction) + data[high] * fraction
+
+
 def _check_summary(actual: dict[str, Any], expected: dict[str, Any], label: str) -> None:
     _equal(actual["min"], expected["min"], f"{label}.min")
     _close(float(actual["mean"]), float(expected["mean"]), f"{label}.mean")
@@ -374,8 +384,12 @@ def audit(results: Path) -> dict[str, Any]:
     # Contract cases: semantic table and circuit structural formulas.
     contracts = _json(results / "contracts" / "contract-summary.json")
     _equal(len(contracts["cases"]), 6, "legacy contract case count")
+    _equal({case["variables"] for case in contracts["cases"]}, {2, 3, 4, 5},
+           "legacy contract variable range")
     survival_contracts = _json(results / "survival-contracts" / "survival-contract-summary.json")
     _equal(len(survival_contracts["cases"]), 8, "survival contract case count")
+    _equal({case["variables"] for case in survival_contracts["cases"]}, {1, 2, 3},
+           "survival contract variable range")
     for case in survival_contracts["cases"]:
         _audit_circuit_stats(case["trace_stats"], f"{case['case']}.trace")
         _audit_circuit_stats(case["closed_stats"], f"{case['case']}.closed")
@@ -383,6 +397,15 @@ def audit(results: Path) -> dict[str, Any]:
                f"{case['case']}: closed result")
         _assert(not case["trace_accept"] or case["closed_accept"],
                 f"{case['case']}: trace positive absent from closed mode")
+        _equal(case["trace_witness"] is not None, bool(case["trace_accept"]),
+               f"{case['case']}: trace replay presence")
+        _equal(case["closed_witness"] is not None, bool(case["closed_accept"]),
+               f"{case['case']}: closed replay presence")
+        for label in ("trace_witness", "closed_witness"):
+            witness = case[label]
+            if witness is not None:
+                _assert(isinstance(witness.get("nodes"), list) and witness.get("root"),
+                        f"{case['case']}: malformed stored {label}")
     counts = survival_contracts["counts"]
     _equal(counts["total"], 8, "survival contract count summary")
     _equal(counts["single_accept"], sum(case["single_accept"] for case in survival_contracts["cases"]),
@@ -391,6 +414,8 @@ def audit(results: Path) -> dict[str, Any]:
            "contract trace accepts")
     _equal(counts["closed_accept"], sum(case["closed_accept"] for case in survival_contracts["cases"]),
            "contract closed accepts")
+    _equal(counts["trace_repairs_over_single"], 4,
+           "survival contract trace repairs over one selected proof")
     checks.append("contract-table semantics and circuit structural formulas")
 
     # Exact Horn specialization: complete small family and deterministic scale study.
@@ -400,6 +425,7 @@ def audit(results: Path) -> dict[str, Any]:
     horn_totals = horn_small["totals"]
     horn_universe = int(horn_totals["clause_universe"])
     horn_limit = int(horn_small["source_size_limit"])
+    horn_mask_limit = 1 << horn_universe
     expected_sources = sum(math.comb(horn_universe, size)
                            for size in range(horn_limit + 1))
     expected_pairs = sum(math.comb(horn_universe, size) * (1 << size)
@@ -417,13 +443,17 @@ def audit(results: Path) -> dict[str, Any]:
     )}
     horn_source_status: dict[int, int] = {}
     horn_sources: set[int] = set()
+    horn_targets_by_source: dict[int, set[int]] = {}
     for index, row in enumerate(horn_rows, 2):
         source_mask = _integer(row, "source_mask")
         target_mask = _integer(row, "target_mask")
+        _assert(0 <= source_mask < horn_mask_limit and 0 <= target_mask < horn_mask_limit,
+                f"Horn exhaustive CSV row {index}: mask outside the 20-clause universe")
         pair = (source_mask, target_mask)
         _assert(pair not in horn_seen, f"Horn exhaustive CSV row {index}: duplicate pair")
         horn_seen.add(pair)
         horn_sources.add(source_mask)
+        horn_targets_by_source.setdefault(source_mask, set()).add(target_mask)
         _equal(target_mask & ~source_mask, 0,
                f"Horn exhaustive CSV row {index}: target is not a deletion subset")
         _equal(_integer(row, "source_size"), source_mask.bit_count(),
@@ -460,6 +490,20 @@ def audit(results: Path) -> dict[str, Any]:
                 f"Horn exhaustive CSV row {index}: invalid circuit size")
         _assert(row["strategy"] in {"acyclic", "layered"},
                 f"Horn exhaustive CSV row {index}: invalid strategy")
+    expected_horn_sources = {
+        mask for mask in range(horn_mask_limit) if mask.bit_count() <= horn_limit
+    }
+    _equal(horn_sources, expected_horn_sources, "Horn exhaustive exact source-mask coverage")
+    for source_mask, observed in horn_targets_by_source.items():
+        expected_targets: set[int] = set()
+        target_mask = source_mask
+        while True:
+            expected_targets.add(target_mask)
+            if target_mask == 0:
+                break
+            target_mask = (target_mask - 1) & source_mask
+        _equal(observed, expected_targets,
+               f"Horn exhaustive exact deletion coverage for source {source_mask}")
     _equal(len(horn_sources), expected_sources, "Horn exhaustive distinct sources")
     _equal(sum(horn_source_status.values()), horn_totals["source_unsat"],
            "Horn exhaustive UNSAT source count")
@@ -473,11 +517,24 @@ def audit(results: Path) -> dict[str, Any]:
     horn_scale = horn["scalable_contract_graphs"]
     scale_totals = horn_scale["totals"]
     _equal(len(horn_scale_rows), scale_totals["queries"], "Horn scale row count")
-    scale_by_instance: dict[int, dict[str, int]] = {}
+    scale_items: dict[int, dict[str, Any]] = {}
+    for item in horn_scale["instances"]:
+        instance = int(item["instance"])
+        _assert(instance not in scale_items,
+                f"Horn scale summary: duplicate instance {instance}")
+        scale_items[instance] = item
+    expected_instance_ids = set(range(int(scale_totals["instances"])))
+    _equal(set(scale_items), expected_instance_ids,
+           "Horn scale exact instance identifier set")
+
+    scale_by_instance: dict[int, dict[str, Any]] = {}
     seen_scale_queries: set[tuple[int, int]] = set()
     for index, row in enumerate(horn_scale_rows, 2):
         instance = _integer(row, "instance")
         query = _integer(row, "query")
+        _assert(instance in scale_items,
+                f"Horn scale CSV row {index}: unknown instance {instance}")
+        item = scale_items[instance]
         pair = (instance, query)
         _assert(pair not in seen_scale_queries,
                 f"Horn scale CSV row {index}: duplicate query")
@@ -495,19 +552,34 @@ def audit(results: Path) -> dict[str, Any]:
         bucket = scale_by_instance.setdefault(instance, {
             "queries": 0, "target_unsat": 0, "single_proof_accept": 0,
             "horn_accept": 0, "incremental_full_mismatches": 0,
+            "query_ids": set(), "recomputed": [], "changed": [],
         })
+        bucket["query_ids"].add(query)
         bucket["queries"] += 1
         bucket["target_unsat"] += flags["target_unsat"]
         bucket["single_proof_accept"] += flags["single_accept"]
         bucket["horn_accept"] += flags["horn_accept"]
         bucket["incremental_full_mismatches"] += int(not flags["incremental_match"])
-        _assert(0 <= _integer(row, "recomputed_gates") <= _integer(row, "circuit_gates"),
+        circuit_gates = _integer(row, "circuit_gates")
+        _equal(circuit_gates, int(item["gates"]),
+               f"Horn scale CSV row {index}: circuit gate count for instance {instance}")
+        recomputed = _integer(row, "recomputed_gates")
+        changed = _integer(row, "changed_leaves")
+        _assert(0 <= recomputed <= circuit_gates,
                 f"Horn scale CSV row {index}: invalid recomputation count")
+        _assert(0 <= changed <= int(item["source_clauses"]),
+                f"Horn scale CSV row {index}: invalid changed-leaf count")
+        bucket["recomputed"].append(recomputed)
+        bucket["changed"].append(changed)
     _equal(len(scale_by_instance), scale_totals["instances"],
            "Horn scale instance count")
-    for item in horn_scale["instances"]:
-        instance = int(item["instance"])
+    _equal(set(scale_by_instance), expected_instance_ids,
+           "Horn scale row instance identifier set")
+    for instance in sorted(scale_items):
+        item = scale_items[instance]
         bucket = scale_by_instance[instance]
+        _equal(bucket["query_ids"], set(range(int(item["queries"]))),
+               f"Horn scale instance {instance}: exact query identifier set")
         _equal(bucket["queries"], item["queries"], f"Horn scale instance {instance}: queries")
         _equal(bucket["target_unsat"], item["target_unsat"],
                f"Horn scale instance {instance}: target UNSAT")
@@ -537,6 +609,25 @@ def audit(results: Path) -> dict[str, Any]:
         _equal(item["single_proof_misses_recovered"],
                item["target_unsat"] - item["single_proof_accept"],
                f"Horn scale instance {instance}: recovered misses")
+        recomputed = bucket["recomputed"]
+        changed = bucket["changed"]
+        gates = int(item["gates"])
+        _close(sum(changed) / len(changed), float(item["mean_changed_leaves"]),
+               f"Horn scale instance {instance}: mean changed leaves")
+        _close(sum(recomputed) / len(recomputed), float(item["mean_recomputed_gates"]),
+               f"Horn scale instance {instance}: mean recomputed gates")
+        _close(_percentile(recomputed, 0.50), float(item["p50_recomputed_gates"]),
+               f"Horn scale instance {instance}: p50 recomputed gates")
+        _close(_percentile(recomputed, 0.95), float(item["p95_recomputed_gates"]),
+               f"Horn scale instance {instance}: p95 recomputed gates")
+        _equal(max(recomputed), item["max_recomputed_gates"],
+               f"Horn scale instance {instance}: maximum recomputed gates")
+        _close(sum(recomputed) / (len(recomputed) * gates),
+               float(item["mean_recomputed_fraction"]),
+               f"Horn scale instance {instance}: mean recomputed fraction")
+        _close(_percentile(recomputed, 0.95) / gates,
+               float(item["p95_recomputed_fraction"]),
+               f"Horn scale instance {instance}: p95 recomputed fraction")
     _equal(sum(item["queries"] for item in horn_scale["instances"]),
            scale_totals["queries"], "Horn scale total queries")
     _equal(sum(item["target_unsat"] for item in horn_scale["instances"]),

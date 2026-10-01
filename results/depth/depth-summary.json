@@ -189,9 +189,9 @@
       }
     }
   },
-  "cpu_seconds": 6.312705243000001,
-  "wall_seconds": 6.313123698000027,
-  "peak_rss_kib": 96432,
+  "cpu_seconds": 5.94133112,
+  "wall_seconds": 5.9498360580000735,
+  "peak_rss_kib": 96812,
   "workers": 1,
   "randomness": "none",
   "interpretation": "earliest true circuit layer and conservatively reconsidered fanout; not proof-search time"

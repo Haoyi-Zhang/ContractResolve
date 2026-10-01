@@ -62,24 +62,24 @@
         {
           "id": "n0",
           "kind": "axiom",
-          "source": "a5",
-          "clause": [
-            2
-          ]
-        },
-        {
-          "id": "n1",
-          "kind": "axiom",
           "source": "a3",
           "clause": [
             -2
           ]
         },
         {
+          "id": "n1",
+          "kind": "axiom",
+          "source": "a5",
+          "clause": [
+            2
+          ]
+        },
+        {
           "id": "n2",
           "kind": "resolve",
-          "left": "n0",
-          "right": "n1",
+          "left": "n1",
+          "right": "n0",
           "pivot": 2,
           "clause": []
         }
@@ -96,9 +96,9 @@
       "a4"
     ]
   },
-  "cpu_seconds": 4.0170375289999996,
-  "wall_seconds": 4.017530686999976,
-  "peak_rss_kib": 95788,
+  "cpu_seconds": 3.493509607,
+  "wall_seconds": 3.51158814900009,
+  "peak_rss_kib": 94508,
   "workers": 1,
   "randomness": "none; complete source family and all edits of Hamming radius at most two",
   "maturity": "finite check plus separately stated general proofs"

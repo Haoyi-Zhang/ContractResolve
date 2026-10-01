@@ -249,6 +249,38 @@ class SurvivalTests(unittest.TestCase):
         circuit = compile_survival(source, cert)
         self.assertFalse(circuit.survives(circuit.evaluate(source)))
 
+    def test_trace_layer_zero_uses_only_admitted_axiom_set(self):
+        source = {"a": [1]}
+        cert = {
+            "mode": "trace",
+            "axioms": [],
+            "clauses": [[1]],
+            "schemas": [],
+            "root": [1],
+            "max_depth": 0,
+        }
+        circuit = compile_survival(source, cert)
+        self.assertEqual(circuit.stats()["source_clauses"], 1)
+        self.assertEqual(circuit.stats()["admitted_axioms"], 0)
+        self.assertFalse(circuit.survives(circuit.evaluate(source)))
+
+    def test_deep_persistence_replay_and_cut_use_iterative_traversal(self):
+        source = {"e": []}
+        cert = {
+            "mode": "closed",
+            "axioms": [{"source": "e", "clause": []}],
+            "clauses": [[]],
+            "schemas": [],
+            "root": [],
+            "max_depth": 2000,
+        }
+        circuit = compile_survival(source, cert)
+        self.assertEqual(circuit.stats()["gates"], 2002)
+        packet = circuit.reconstruct(circuit.evaluate(source))
+        self.assertEqual(len(packet["nodes"]), 1)
+        self.assertEqual(verify(source, packet).conclusion, ())
+        self.assertEqual(circuit.blocking_cut(circuit.evaluate({})), ("e",))
+
 
 if __name__ == "__main__":
     unittest.main()

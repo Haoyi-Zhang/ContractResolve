@@ -13,9 +13,9 @@
     "witnesses_rechecked": 10787,
     "incremental_full_evaluation_matches": 19683
   },
-  "cpu_seconds": 2.9140131460000003,
-  "wall_seconds": 2.9141669919999913,
-  "peak_rss_kib": 94520,
+  "cpu_seconds": 2.7148364739999997,
+  "wall_seconds": 2.724277425999844,
+  "peak_rss_kib": 93620,
   "workers": 1,
   "randomness": "none",
   "maturity": "complete finite enumeration for the stated source/deletion family"

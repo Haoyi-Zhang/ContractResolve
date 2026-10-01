@@ -23,9 +23,9 @@
       3
     ]
   },
-  "cpu_seconds": 0.48023802400000004,
-  "wall_seconds": 0.4803267549999646,
-  "peak_rss_kib": 92852,
+  "cpu_seconds": 0.49561384100000005,
+  "wall_seconds": 0.49667318899992097,
+  "peak_rss_kib": 92968,
   "workers": 1,
   "randomness": "none",
   "maturity": "finite-check, not a new RAT theorem",

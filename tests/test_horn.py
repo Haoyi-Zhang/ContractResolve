@@ -10,9 +10,24 @@ SRC = Path(__file__).resolve().parents[1] / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from certificates import Rejected, verify
+from certificates import Rejected, ReplayBudgetExceeded, verify
 from horn import compile_horn
 from horn_oracle import retained_horn_unsat
+
+
+def wide_chain_source(facts: int, rules: int) -> dict[str, list[int]]:
+    """Build a wide chained Horn source; replay is budgeted before packet materialization."""
+    source = {f"fact-{atom}": [atom] for atom in range(1, facts + 1)}
+    previous = facts
+    for index in range(rules):
+        head = facts + index + 1
+        antecedents = tuple(range(1, facts + 1)) if index == 0 else (
+            tuple(range(1, facts)) + (previous,)
+        )
+        source[f"rule-{index}"] = sorted([-atom for atom in antecedents] + [head])
+        previous = head
+    source["deny"] = [-previous]
+    return source
 
 
 class HornTests(unittest.TestCase):
@@ -146,6 +161,50 @@ class HornTests(unittest.TestCase):
         evaluation = circuit.evaluate(source)
         self.assertFalse(circuit.survives(evaluation))
         self.assertEqual(circuit.blocking_cut(evaluation), ())
+
+    def test_source_admission_rejects_replay_over_small_test_budget(self):
+        source = wide_chain_source(facts=3, rules=4)
+        admitted = compile_horn(source, replay_node_limit=21)
+        evaluation = admitted.evaluate(source)
+        self.assertEqual(admitted.stats()["gates"], 21)
+        self.assertEqual(admitted.replay_node_count(evaluation), 21)
+        self.assertEqual(verify(source, admitted.reconstruct(evaluation)).conclusion, ())
+        with self.assertRaisesRegex(
+            ReplayBudgetExceeded,
+            r"requires 21 ordinary proof nodes; admitted limit is 20",
+        ):
+            compile_horn(source, replay_node_limit=20)
+
+    def test_wide_chain_is_rejected_before_large_proof_materialization(self):
+        source = wide_chain_source(facts=999, rules=100)
+        with self.assertRaisesRegex(
+            ReplayBudgetExceeded,
+            r"requires 101001 ordinary proof nodes; admitted limit is 100000",
+        ):
+            compile_horn(source)
+
+    def test_target_replay_budget_rejection_is_not_logical_false(self):
+        source = {"a-empty": [], **wide_chain_source(facts=2, rules=2)}
+        circuit = compile_horn(source, replay_node_limit=1)
+        target = {sid: body for sid, body in source.items() if sid != "a-empty"}
+        evaluation = circuit.evaluate(target)
+        self.assertTrue(circuit.survives(evaluation))
+        with self.assertRaises(ReplayBudgetExceeded):
+            circuit.reconstruct(evaluation)
+
+    def test_deep_horn_replay_and_cut_use_iterative_traversal(self):
+        source = {"fact": [1]}
+        previous = 1
+        for index in range(1100):
+            head = index + 2
+            source[f"rule-{index:04d}"] = [-previous, head]
+            previous = head
+        source["deny"] = [-previous]
+        circuit = compile_horn(source)
+        packet = circuit.reconstruct(circuit.evaluate(source))
+        self.assertEqual(verify(source, packet).conclusion, ())
+        target = {sid: body for sid, body in source.items() if sid != "fact"}
+        self.assertEqual(circuit.blocking_cut(circuit.evaluate(target)), ("fact",))
 
 
 if __name__ == "__main__":
