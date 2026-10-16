@@ -208,6 +208,15 @@ formula/certificate binding, safe serialization, freshness and rollback policy,
 concurrency control, and a verified source-to-CNF identity pipeline. Those are
 not implemented here.
 
+## Optional resolution schematic
+
+The manuscript's resolution schematic is a self-contained Python vector drawing
+with embedded fonts. Install `requirements-figures.txt`, then run
+`python -B figures/draw_schematics.py` and `python -B figures/check_figures.py`.
+Use `--output /path/to/paper/figures` for the manuscript copy; its build entry
+invokes this consumer before TeX. This optional dependency does not change
+the standard-library finite campaign or the separately pinned native solver.
+
 ## License and third-party material
 
 Repository-authored code and text are released under `LICENSE`. Scholarly
